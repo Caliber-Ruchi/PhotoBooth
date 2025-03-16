@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Booth App</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: url('bg.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .video-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    video {
+      width: 750px;
+      height: 500px;
+      border-radius: 12px;
+      filter: var(--filter, none);
+    }
+    .photo-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 5px;
+      border-radius: 12px;
+      width: 500px;
+      height: 880px;
+      overflow-y: auto;
+      align-items: center;
+      display: none;
+      position: relative;
+    }
+    .photo {
+      width: 480px;
+      height: 280px;
+      border: 2px solid #ff69b4;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(165, 66, 66, 0.1);
+      object-fit: cover;
+      position: relative;
+    }
+    .photo .countdown-overlay {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+    button {
+      background: #ff69b4;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: background 0.3s ease-in-out;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #ff1493;
+    }
+    .countdown {
+      position: absolute;
+      top: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+    .filter-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="video-container">
+      <div id="countdown" class="countdown"></div>
+      <video id="video" autoplay></video>
+      <div class="filter-controls">
+        <label>Filter: 
+          <select id="filterSelect" onchange="applyFilter()">
+            <option value="none">None</option>
+            <option value="grayscale(100%)">Grayscale</option>
+            <option value="sepia(100%)">Sepia</option>
+            <option value="contrast(200%)">High Contrast</option>
+            <option value="brightness(150%)">Brighter</option>
+            <option value="invert(100%)">Invert Colors</option>
+            <option value="hue-rotate(90deg)">Hue Rotate</option>
+            <option value="saturate(200%)">Saturated</option>
+          </select>
+        </label>
+      </div>
+      <button onclick="startPhotoCapture()">📸 Capture Moment</button>
+      <button id="downloadBtn" onclick="downloadPhotoStrip()" style="display:none;">⬇️ Download Strip</button>
+    </div>
+    <div class="photo-strip" id="photoStrip"></div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const photoStrip = document.getElementById('photoStrip');
+    const countdown = document.getElementById('countdown');
+    const downloadBtn = document.getElementById('downloadBtn');
+    let captureCount = 0;
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+      }
+    }
+
+    function applyFilter() {
+      const filterValue = document.getElementById('filterSelect').value;
+      video.style.filter = filterValue;
+    }
+
+    function countdownTimer(seconds, callback) {
+      countdown.innerText = `Smile! ${seconds}..`;
+      if (seconds > 1) {
+        setTimeout(() => countdownTimer(seconds - 1, callback), 500);
+      } else {
+        setTimeout(() => {
+          countdown.innerText = '';
+          callback();
+        }, 500);
+      }
+    }
+
+    function takePhoto() {
+      if (!video.srcObject || captureCount >= 3) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      context.filter = video.style.filter;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.className = 'photo';
+      photoStrip.appendChild(img);
+      captureCount++;
+      if (captureCount === 3) downloadBtn.style.display = 'block';
+    }
+
+    function startPhotoCapture() {
+      captureCount = 0;
+      photoStrip.innerHTML = '';
+      photoStrip.style.display = 'flex';
+      downloadBtn.style.display = 'none';
+      let count = 0;
+      const interval = setInterval(() => {
+        countdownTimer(2, takePhoto);
+        count++;
+        if (count >= 3) clearInterval(interval);
+      }, 1000);
+    }
+
+    window.onload = startCamera;
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
