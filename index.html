@@ -124,7 +124,7 @@
     const countdown = document.getElementById('countdown');
     const downloadBtn = document.getElementById('downloadBtn');
     let captureCount = 0;
-
+  
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -133,12 +133,12 @@
         console.error('Error accessing camera:', error);
       }
     }
-
+  
     function applyFilter() {
       const filterValue = document.getElementById('filterSelect').value;
       video.style.filter = filterValue;
     }
-
+  
     function countdownTimer(seconds, callback) {
       countdown.innerText = `Smile! ${seconds}..`;
       if (seconds > 1) {
@@ -150,7 +150,7 @@
         }, 500);
       }
     }
-
+  
     function takePhoto() {
       if (!video.srcObject || captureCount >= 3) return;
       const canvas = document.createElement('canvas');
@@ -164,9 +164,12 @@
       img.className = 'photo';
       photoStrip.appendChild(img);
       captureCount++;
-      if (captureCount === 3) downloadBtn.style.display = 'block';
+  
+      if (captureCount === 3) {
+        downloadBtn.style.display = 'block';
+      }
     }
-
+  
     function startPhotoCapture() {
       captureCount = 0;
       photoStrip.innerHTML = '';
@@ -177,39 +180,32 @@
         countdownTimer(2, takePhoto);
         count++;
         if (count >= 3) clearInterval(interval);
-      }, 1000);
+      }, 2000); // Changed from 1000 to 2000 (2 seconds)
     }
-
+  
     function downloadPhotoStrip() {
-      if (!photoStrip.children.length) {
-        alert('No photos to download!');
-        return;
-      }
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = 500;
-      canvas.height = photoStrip.children.length * 280;
-
-      Array.from(photoStrip.children).forEach((img, index) => {
-        const image = new Image();
-        image.src = img.src;
-        image.onload = () => {
-          ctx.drawImage(image, 0, index * 280, 480, 280);
-          if (index === photoStrip.children.length - 1) {
-            canvas.toBlob((blob) => {
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = 'photo_strip.png';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }, 'image/png');
-          }
-        };
+      const images = photoStrip.querySelectorAll('.photo');
+      if (images.length === 0) return;
+  
+      const stripCanvas = document.createElement('canvas');
+      const stripCtx = stripCanvas.getContext('2d');
+  
+      const width = images[0].width;
+      const height = images[0].height * images.length;
+  
+      stripCanvas.width = width;
+      stripCanvas.height = height;
+  
+      images.forEach((img, index) => {
+        stripCtx.drawImage(img, 0, index * img.height, img.width, img.height);
       });
+  
+      const link = document.createElement('a');
+      link.href = stripCanvas.toDataURL('image/png');
+      link.download = 'photo_strip.png';
+      link.click();
     }
-
+  
     window.onload = startCamera;
   </script>
 </body>
